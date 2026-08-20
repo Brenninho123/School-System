@@ -289,6 +289,70 @@ h2.section-title {
 
 .pin-note p { margin: 0; color: var(--ink); }
 
+.resolver label {
+  display: block;
+  font-family: "Space Mono", monospace;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+
+.resolver-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.resolver-row input {
+  flex: 1 1 260px;
+  font-family: "Literata", serif;
+  font-size: 1rem;
+  padding: 12px 14px;
+  border: 1px solid rgba(30,42,56,0.25);
+  border-radius: 4px;
+  background: #fffdf6;
+  color: var(--ink);
+}
+
+.resolver-row input:focus-visible {
+  outline: 2px solid var(--margin-red);
+  outline-offset: 2px;
+}
+
+.resolver-row button {
+  font-family: "Space Mono", monospace;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 4px;
+  background: var(--chalk-green);
+  color: #fffdf6;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.resolver-row button:hover { background: #3d6249; }
+
+.resolver-row button:focus-visible {
+  outline: 2px solid var(--margin-red);
+  outline-offset: 2px;
+}
+
+.resolver-output { margin-top: 24px; }
+
+.resolver-result {
+  max-width: 480px;
+}
+
+.resolver-steps {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  font-family: "Space Mono", monospace;
+  font-size: 0.82rem;
+}
+
 footer {
   padding: 40px 0 64px;
   border-top: 1px solid rgba(30,42,56,0.12);
@@ -328,6 +392,7 @@ footer {
       <a href="#disciplinas">Disciplinas</a>
       <a href="#horario">Horário</a>
       <a href="#avisos">Avisos</a>
+      <a href="#resolvedor">Resolvedor</a>
     </nav>
   </header>
 
@@ -421,10 +486,53 @@ footer {
     </div>
   </section>
 
+  <section id="resolvedor">
+    <p class="eyebrow">Ferramenta</p>
+    <h2 class="section-title">Resolvedor de matemática</h2>
+    <form class="resolver" id="resolver-form">
+      <label for="resolver-input">Digite uma expressão, equação, porcentagem ou média</label>
+      <div class="resolver-row">
+        <input type="text" id="resolver-input" name="resolver-input" placeholder="Ex: 2x + 3 = 11" autocomplete="off">
+        <button type="submit">Resolver</button>
+      </div>
+    </form>
+    <div class="resolver-output" id="resolver-output" aria-live="polite"></div>
+  </section>
+
   <footer>
     Feito com carinho para a turma — 2026.
   </footer>
 </div>
+
+<script src="src/math/MathResolver.js"></script>
+<script>
+const resolver = new MathResolver();
+const form = document.getElementById("resolver-form");
+const input = document.getElementById("resolver-input");
+const output = document.getElementById("resolver-output");
+
+form.addEventListener("submit", event => {
+  event.preventDefault();
+  const value = input.value.trim();
+  if (!value) return;
+
+  const solved = resolver.resolve(value);
+  output.innerHTML = "";
+
+  const card = document.createElement("div");
+  card.className = "pin-note resolver-result";
+  card.style.setProperty("--tilt", "-1deg");
+
+  if (solved.type === "error") {
+    card.innerHTML = `<h4>Não consegui resolver</h4><p>${solved.message}</p>`;
+  } else {
+    const stepsList = solved.steps.map(step => `<li>${step}</li>`).join("");
+    card.innerHTML = `<h4>Resultado: ${solved.result}</h4><ol class="resolver-steps">${stepsList}</ol>`;
+  }
+
+  output.appendChild(card);
+});
+</script>
 
 </body>
 </html>
