@@ -731,10 +731,11 @@ footer {
 <script src="src/math/MathResolver.js"></script>
 <script src="src/physical/PhyResolver.js"></script>
 <script src="src/online/Network.js"></script>
+<script src="src/online/NetworkManager.js"></script>
 <script>
 const resolver = new MathResolver();
 const physicsResolver = new PhyResolver();
-const network = new Network();
+const networkManager = new NetworkManager();
 
 const form = document.getElementById("resolver-form");
 const input = document.getElementById("resolver-input");
@@ -779,13 +780,13 @@ physicsForm.addEventListener("submit", event => {
   renderResult(physicsResolver.resolve(value), physicsOutput);
 });
 
-function updateStatus(connected) {
-  statusDot.className = "status-dot " + (connected ? "online" : "offline");
-  statusText.textContent = connected ? "Conectado" : "Sem conexão";
+function updateStatus(status) {
+  statusDot.className = "status-dot " + (status.connected ? "online" : "offline");
+  statusText.textContent = status.connected ? "Conectado" : "Sem conexão, tentando reconectar…";
 }
 
 function renderPresence() {
-  const users = network.getOnlineUsers();
+  const users = networkManager.getOnlineUsers();
   presenceList.innerHTML = "";
   if (!users.length) {
     const empty = document.createElement("li");
@@ -803,10 +804,10 @@ function renderPresence() {
   });
 }
 
-updateStatus(network.isConnected());
-network.onConnectionChange(updateStatus);
-network.onPresenceChange(renderPresence);
-network.start();
+networkManager.onStatusChange(updateStatus);
+networkManager.onPresenceChange(renderPresence);
+networkManager.init();
+updateStatus(networkManager.getStatus());
 renderPresence();
 setInterval(renderPresence, 5000);
 
@@ -815,8 +816,7 @@ presenceForm.addEventListener("submit", event => {
   const name = presenceName.value.trim();
   if (!name) return;
   const id = "user-" + Math.random().toString(36).slice(2, 10);
-  network.registerUser({ id, name, role: presenceRole.value });
-  network.start();
+  networkManager.init({ id, name, role: presenceRole.value });
   renderPresence();
   presenceForm.querySelector("button").textContent = "Você está online";
   presenceForm.querySelector("button").disabled = true;
