@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema Escolar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Literata:ital,wght@0,400;0,500;0,600;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #f2e9d8;
+  --paper-dark: #e9dcc0;
+  --rule-blue: #7fa8c9;
+  --margin-red: #c1443d;
+  --ink: #1e2a38;
+  --ink-soft: #46586b;
+  --pencil-yellow: #e8b23d;
+  --chalk-green: #4c7a5e;
+  --tape: rgba(232, 178, 61, 0.35);
+  --spiral: #b9ad91;
+  --shadow: 0 6px 18px rgba(30, 42, 56, 0.14);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 37px,
+    var(--rule-blue) 38px
+  );
+  color: var(--ink);
+  font-family: "Literata", Georgia, serif;
+  line-height: 1.6;
+}
+
+.page {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding-left: 84px;
+  padding-right: 32px;
+}
+
+.margin-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 68px;
+  width: 2px;
+  background: var(--margin-red);
+  opacity: 0.55;
+}
+
+.spiral {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.spiral span {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 4px solid var(--spiral);
+  background: var(--paper);
+  box-shadow: inset 0 0 0 3px var(--paper), 2px 0 0 rgba(30,42,56,0.08);
+}
+
+header.hero {
+  padding-top: 56px;
+  padding-bottom: 32px;
+  position: relative;
+}
+
+.tape {
+  display: inline-block;
+  background: var(--tape);
+  color: var(--ink-soft);
+  font-family: "Space Mono", monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  transform: rotate(-2deg);
+  border: 1px dashed rgba(30,42,56,0.25);
+}
+
+h1.title {
+  font-family: "Caveat", cursive;
+  font-weight: 700;
+  font-size: clamp(3rem, 8vw, 5.4rem);
+  margin: 12px 0 4px;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--ink-soft);
+  max-width: 46ch;
+  margin: 0;
+}
+
+nav.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 32px 0 8px;
+}
+
+nav.tabs a {
+  font-family: "Space Mono", monospace;
+  font-size: 0.85rem;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--paper-dark);
+  border: 1px solid rgba(30,42,56,0.15);
+  border-bottom: none;
+  padding: 8px 16px;
+  border-radius: 8px 8px 0 0;
+  transform: translateY(2px);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+nav.tabs a:hover,
+nav.tabs a:focus-visible {
+  transform: translateY(-2px);
+  background: var(--pencil-yellow);
+  outline: none;
+}
+
+nav.tabs a:focus-visible {
+  outline: 2px solid var(--margin-red);
+  outline-offset: 2px;
+}
+
+section {
+  padding: 48px 0;
+  border-top: 1px solid rgba(30,42,56,0.12);
+}
+
+section:first-of-type { border-top: none; }
+
+h2.section-title {
+  font-family: "Caveat", cursive;
+  font-weight: 700;
+  font-size: 2.4rem;
+  margin: 0 0 24px;
+  color: var(--ink);
+}
+
+.eyebrow {
+  font-family: "Space Mono", monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--margin-red);
+  margin: 0 0 4px;
+}
+
+.subject-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.subject-card {
+  background: #fffdf6;
+  border-radius: 4px;
+  padding: 20px 18px 18px;
+  box-shadow: var(--shadow);
+  border-left: 8px solid var(--card-color, var(--chalk-green));
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 0.2s ease;
+}
+
+.subject-card:hover { transform: rotate(0deg) translateY(-3px); }
+
+.subject-card h3 {
+  margin: 0 0 6px;
+  font-family: "Literata", serif;
+  font-size: 1.15rem;
+}
+
+.subject-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.subject-card .teacher {
+  margin-top: 10px;
+  font-family: "Space Mono", monospace;
+  font-size: 0.78rem;
+  color: var(--ink);
+}
+
+.timetable {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fffdf6;
+  box-shadow: var(--shadow);
+  font-family: "Space Mono", monospace;
+  font-size: 0.85rem;
+}
+
+.timetable caption {
+  text-align: left;
+  font-family: "Literata", serif;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+
+.timetable th, .timetable td {
+  border: 1px solid rgba(30,42,56,0.12);
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.timetable thead th {
+  background: var(--paper-dark);
+  color: var(--ink);
+}
+
+.timetable tbody th {
+  background: var(--paper-dark);
+  font-weight: 700;
+}
+
+.timetable td.free {
+  color: rgba(30,42,56,0.35);
+}
+
+.corkboard {
+  background: #cdb896;
+  border-radius: 6px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 18px;
+}
+
+.pin-note {
+  background: var(--pencil-yellow);
+  padding: 16px;
+  border-radius: 2px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  position: relative;
+  transform: rotate(var(--tilt, 0deg));
+  font-size: 0.9rem;
+}
+
+.pin-note::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--margin-red);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+.pin-note h4 {
+  margin: 0 0 6px;
+  font-family: "Caveat", cursive;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.pin-note p { margin: 0; color: var(--ink); }
+
+footer {
+  padding: 40px 0 64px;
+  border-top: 1px solid rgba(30,42,56,0.12);
+  font-family: "Caveat", cursive;
+  font-size: 1.4rem;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 640px) {
+  .spiral { width: 24px; }
+  .page { padding-left: 56px; padding-right: 20px; }
+  .margin-line { left: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .subject-card, nav.tabs a { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="spiral" aria-hidden="true">
+  <span></span><span></span><span></span><span></span><span></span>
+  <span></span><span></span><span></span><span></span><span></span>
+</div>
+
+<div class="page">
+  <div class="margin-line" aria-hidden="true"></div>
+
+  <header class="hero">
+    <span class="tape">Ano letivo 2026</span>
+    <h1 class="title">Sistema Escolar</h1>
+    <p class="subtitle">Um caderno digital com disciplinas, horários e avisos da turma, tudo em um só lugar.</p>
+
+    <nav class="tabs" aria-label="Navegação principal">
+      <a href="#disciplinas">Disciplinas</a>
+      <a href="#horario">Horário</a>
+      <a href="#avisos">Avisos</a>
+    </nav>
+  </header>
+
+  <section id="disciplinas">
+    <p class="eyebrow">Este bimestre</p>
+    <h2 class="section-title">Disciplinas</h2>
+    <div class="subject-grid">
+      <article class="subject-card" style="--card-color:#4c7a5e; --tilt:-1deg;">
+        <h3>Matemática</h3>
+        <p>Funções, geometria e revisão para a prova bimestral.</p>
+        <p class="teacher">Prof. Ricardo Alves</p>
+      </article>
+      <article class="subject-card" style="--card-color:#c1443d; --tilt:1deg;">
+        <h3>Português</h3>
+        <p>Literatura brasileira e produção de texto dissertativo.</p>
+        <p class="teacher">Profa. Luiza Martins</p>
+      </article>
+      <article class="subject-card" style="--card-color:#7fa8c9; --tilt:-0.5deg;">
+        <h3>História</h3>
+        <p>Brasil república e movimentos sociais do século XX.</p>
+        <p class="teacher">Prof. Diego Souza</p>
+      </article>
+      <article class="subject-card" style="--card-color:#e8b23d; --tilt:0.8deg;">
+        <h3>Ciências</h3>
+        <p>Ecossistemas, cadeia alimentar e projeto de horta escolar.</p>
+        <p class="teacher">Profa. Camila Prado</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="horario">
+    <p class="eyebrow">Semana atual</p>
+    <h2 class="section-title">Horário</h2>
+    <table class="timetable">
+      <caption>Aulas de segunda a sexta, por horário</caption>
+      <thead>
+        <tr>
+          <th scope="col">Horário</th>
+          <th scope="col">Seg</th>
+          <th scope="col">Ter</th>
+          <th scope="col">Qua</th>
+          <th scope="col">Qui</th>
+          <th scope="col">Sex</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">07:30</th>
+          <td>Matemática</td>
+          <td>Português</td>
+          <td>Matemática</td>
+          <td>História</td>
+          <td>Ciências</td>
+        </tr>
+        <tr>
+          <th scope="row">08:20</th>
+          <td>Português</td>
+          <td>Ciências</td>
+          <td>Português</td>
+          <td>Matemática</td>
+          <td>História</td>
+        </tr>
+        <tr>
+          <th scope="row">09:10</th>
+          <td class="free">Livre</td>
+          <td>História</td>
+          <td class="free">Livre</td>
+          <td>Ciências</td>
+          <td>Português</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="avisos">
+    <p class="eyebrow">Mural</p>
+    <h2 class="section-title">Avisos</h2>
+    <div class="corkboard">
+      <div class="pin-note" style="--tilt:-3deg;">
+        <h4>Prova de Matemática</h4>
+        <p>Quinta-feira, capítulos 4 e 5. Levar calculadora.</p>
+      </div>
+      <div class="pin-note" style="--tilt:2deg;">
+        <h4>Entrega de redação</h4>
+        <p>Sexta-feira até 12h, no portal ou impressa.</p>
+      </div>
+      <div class="pin-note" style="--tilt:-1.5deg;">
+        <h4>Reunião de pais</h4>
+        <p>Sábado às 9h no auditório principal.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Feito com carinho para a turma — 2026.
+  </footer>
+</div>
+
+</body>
+</html>
