@@ -364,6 +364,99 @@ h2.section-title {
 
 .resolver-output { margin-top: 24px; }
 
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  font-family: "Space Mono", monospace;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(30,42,56,0.25);
+  display: inline-block;
+}
+
+.status-dot.online { background: var(--chalk-green); }
+.status-dot.offline { background: var(--margin-red); }
+
+.presence-form .presence-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.presence-row input,
+.presence-row select {
+  font-family: "Literata", serif;
+  font-size: 1rem;
+  padding: 12px 14px;
+  border: 1px solid rgba(30,42,56,0.25);
+  border-radius: 4px;
+  background: #fffdf6;
+  color: var(--ink);
+}
+
+.presence-row input { flex: 1 1 200px; }
+
+.presence-row button {
+  font-family: "Space Mono", monospace;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 4px;
+  background: var(--chalk-green);
+  color: #fffdf6;
+  cursor: pointer;
+}
+
+.presence-row button:disabled {
+  background: rgba(30,42,56,0.25);
+  cursor: default;
+}
+
+.presence-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.presence-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fffdf6;
+  border-radius: 4px;
+  padding: 10px 14px;
+  box-shadow: var(--shadow);
+  font-size: 0.92rem;
+}
+
+.presence-role {
+  margin-left: auto;
+  font-family: "Space Mono", monospace;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.presence-empty {
+  font-family: "Space Mono", monospace;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
 .resolver-result {
   max-width: 480px;
 }
@@ -416,7 +509,13 @@ footer {
       <a href="#avisos">Avisos</a>
       <a href="#resolvedor">Resolvedor</a>
       <a href="#fisica">Física</a>
+      <a href="#presenca">Presença</a>
     </nav>
+
+    <div class="status-badge" id="status-badge">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Verificando conexão…</span>
+    </div>
   </header>
 
   <section id="disciplinas">
@@ -607,6 +706,23 @@ footer {
     <div class="resolver-output" id="physics-output" aria-live="polite"></div>
   </section>
 
+  <section id="presenca">
+    <p class="eyebrow">Ao vivo</p>
+    <h2 class="section-title">Quem está online</h2>
+    <p class="subtitle" style="margin-bottom:20px;">Entre com seu nome para aparecer na lista. Funciona entre abas abertas neste mesmo navegador.</p>
+    <form class="presence-form" id="presence-form">
+      <div class="presence-row">
+        <input type="text" id="presence-name" placeholder="Seu nome" autocomplete="off">
+        <select id="presence-role">
+          <option value="aluno">Aluno</option>
+          <option value="professor">Professor</option>
+        </select>
+        <button type="submit">Entrar</button>
+      </div>
+    </form>
+    <ul class="presence-list" id="presence-list"></ul>
+  </section>
+
   <footer>
     Feito com carinho para a turma — 2026.
   </footer>
@@ -614,15 +730,24 @@ footer {
 
 <script src="src/math/MathResolver.js"></script>
 <script src="src/physical/PhyResolver.js"></script>
+<script src="src/online/Network.js"></script>
 <script>
 const resolver = new MathResolver();
 const physicsResolver = new PhyResolver();
+const network = new Network();
+
 const form = document.getElementById("resolver-form");
 const input = document.getElementById("resolver-input");
 const output = document.getElementById("resolver-output");
 const physicsForm = document.getElementById("physics-form");
 const physicsInput = document.getElementById("physics-input");
 const physicsOutput = document.getElementById("physics-output");
+const statusDot = document.getElementById("status-dot");
+const statusText = document.getElementById("status-text");
+const presenceForm = document.getElementById("presence-form");
+const presenceName = document.getElementById("presence-name");
+const presenceRole = document.getElementById("presence-role");
+const presenceList = document.getElementById("presence-list");
 
 function renderResult(solved, container) {
   container.innerHTML = "";
@@ -652,6 +777,51 @@ physicsForm.addEventListener("submit", event => {
   const value = physicsInput.value.trim();
   if (!value) return;
   renderResult(physicsResolver.resolve(value), physicsOutput);
+});
+
+function updateStatus(connected) {
+  statusDot.className = "status-dot " + (connected ? "online" : "offline");
+  statusText.textContent = connected ? "Conectado" : "Sem conexão";
+}
+
+function renderPresence() {
+  const users = network.getOnlineUsers();
+  presenceList.innerHTML = "";
+  if (!users.length) {
+    const empty = document.createElement("li");
+    empty.className = "presence-empty";
+    empty.textContent = "Ninguém entrou ainda.";
+    presenceList.appendChild(empty);
+    return;
+  }
+  users.forEach(user => {
+    const item = document.createElement("li");
+    item.className = "presence-item";
+    const roleLabel = user.role === "professor" ? "Professor" : "Aluno";
+    item.innerHTML = `<span class="status-dot online"></span><span>${user.name}</span><span class="presence-role">${roleLabel}</span>`;
+    presenceList.appendChild(item);
+  });
+}
+
+updateStatus(network.isConnected());
+network.onConnectionChange(updateStatus);
+network.onPresenceChange(renderPresence);
+network.start();
+renderPresence();
+setInterval(renderPresence, 5000);
+
+presenceForm.addEventListener("submit", event => {
+  event.preventDefault();
+  const name = presenceName.value.trim();
+  if (!name) return;
+  const id = "user-" + Math.random().toString(36).slice(2, 10);
+  network.registerUser({ id, name, role: presenceRole.value });
+  network.start();
+  renderPresence();
+  presenceForm.querySelector("button").textContent = "Você está online";
+  presenceForm.querySelector("button").disabled = true;
+  presenceName.disabled = true;
+  presenceRole.disabled = true;
 });
 </script>
 
