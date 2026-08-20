@@ -247,6 +247,28 @@ h2.section-title {
   color: rgba(30,42,56,0.35);
 }
 
+.timetable td.interval {
+  background: var(--pencil-yellow);
+  font-family: "Space Mono", monospace;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.timetable .teacher-name {
+  display: block;
+  font-family: "Literata", serif;
+  font-style: italic;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+.timetable-afternoon {
+  margin-top: 24px;
+}
+
 .corkboard {
   background: #cdb896;
   border-radius: 6px;
@@ -424,44 +446,116 @@ footer {
   </section>
 
   <section id="horario">
-    <p class="eyebrow">Semana atual</p>
+    <p class="eyebrow">1ª Série</p>
     <h2 class="section-title">Horário</h2>
     <table class="timetable">
-      <caption>Aulas de segunda a sexta, por horário</caption>
+      <caption>Aulas da manhã, segunda a sexta</caption>
       <thead>
         <tr>
           <th scope="col">Horário</th>
-          <th scope="col">Seg</th>
-          <th scope="col">Ter</th>
-          <th scope="col">Qua</th>
-          <th scope="col">Qui</th>
-          <th scope="col">Sex</th>
+          <th scope="col">Segunda</th>
+          <th scope="col">Terça</th>
+          <th scope="col">Quarta</th>
+          <th scope="col">Quinta</th>
+          <th scope="col">Sexta</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <th scope="row">07:30</th>
-          <td>Matemática</td>
-          <td>Português</td>
-          <td>Matemática</td>
-          <td>História</td>
-          <td>Ciências</td>
+          <th scope="row">07:00</th>
+          <td>Biologia<br><span class="teacher-name">Marcos</span></td>
+          <td>Química Aprofundada<br><span class="teacher-name">Geovani</span></td>
+          <td>Educação Física<br><span class="teacher-name">Paola</span></td>
+          <td>Matemática<br><span class="teacher-name">Gustavo</span></td>
+          <td>Literatura<br><span class="teacher-name">Josiane</span></td>
         </tr>
         <tr>
-          <th scope="row">08:20</th>
-          <td>Português</td>
-          <td>Ciências</td>
-          <td>Português</td>
-          <td>Matemática</td>
-          <td>História</td>
+          <th scope="row">07:50</th>
+          <td>Química<br><span class="teacher-name">Geovani</span></td>
+          <td>Química Aprofundada<br><span class="teacher-name">Geovani</span></td>
+          <td>Geografia<br><span class="teacher-name">Thiago</span></td>
+          <td>Geografia<br><span class="teacher-name">Thiago</span></td>
+          <td>Literatura<br><span class="teacher-name">Josiane</span></td>
+        </tr>
+        <tr class="interval-row">
+          <th scope="row">08:40</th>
+          <td class="interval" colspan="5">Intervalo</td>
         </tr>
         <tr>
-          <th scope="row">09:10</th>
-          <td class="free">Livre</td>
-          <td>História</td>
-          <td class="free">Livre</td>
-          <td>Ciências</td>
-          <td>Português</td>
+          <th scope="row">09:00</th>
+          <td>Química<br><span class="teacher-name">Geovani</span></td>
+          <td>Matemática<br><span class="teacher-name">Gustavo</span></td>
+          <td>Matemática<br><span class="teacher-name">Gustavo</span></td>
+          <td>Filosofia<br><span class="teacher-name">Giane</span></td>
+          <td>Itinerário Formativo/SER+<br><span class="teacher-name">Mariane</span></td>
+        </tr>
+        <tr>
+          <th scope="row">09:50</th>
+          <td>História<br><span class="teacher-name">Pedro</span></td>
+          <td>Física<br><span class="teacher-name">Delvany</span></td>
+          <td>Laboratório de Matemática<br><span class="teacher-name">Thales</span></td>
+          <td>Arte<br><span class="teacher-name">Tatiane</span></td>
+          <td>Laboratório de Matemática<br><span class="teacher-name">Thales</span></td>
+        </tr>
+        <tr class="interval-row">
+          <th scope="row">10:40</th>
+          <td class="interval" colspan="5">Intervalo</td>
+        </tr>
+        <tr>
+          <th scope="row">11:00</th>
+          <td>História<br><span class="teacher-name">Pedro</span></td>
+          <td>Português<br><span class="teacher-name">Elen</span></td>
+          <td>Física Aprofundada<br><span class="teacher-name">Delvany</span></td>
+          <td>Sociologia<br><span class="teacher-name">Giane</span></td>
+          <td>Português<br><span class="teacher-name">Elen</span></td>
+        </tr>
+        <tr>
+          <th scope="row">11:50</th>
+          <td>Geografia<br><span class="teacher-name">Thiago</span></td>
+          <td>Física<br><span class="teacher-name">Delvany</span></td>
+          <td>Física Aprofundada<br><span class="teacher-name">Delvany</span></td>
+          <td>Português<br><span class="teacher-name">Elen</span></td>
+          <td>História<br><span class="teacher-name">Pedro</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="timetable timetable-afternoon">
+      <caption>Aulas da tarde, segunda a sexta</caption>
+      <thead>
+        <tr>
+          <th scope="col">Horário</th>
+          <th scope="col">Segunda</th>
+          <th scope="col">Terça</th>
+          <th scope="col">Quarta</th>
+          <th scope="col">Quinta</th>
+          <th scope="col">Sexta</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">13:40</th>
+          <td>Produção Textual<br><span class="teacher-name">Gabrielly</span></td>
+          <td class="free">—</td>
+          <td>Laboratório de Biologia<br><span class="teacher-name">Marcos</span></td>
+          <td class="free">—</td>
+          <td class="free">—</td>
+        </tr>
+        <tr>
+          <th scope="row">14:30</th>
+          <td>Produção Textual<br><span class="teacher-name">Gabrielly</span></td>
+          <td class="free">—</td>
+          <td>Laboratório de Biologia<br><span class="teacher-name">Marcos</span></td>
+          <td class="free">—</td>
+          <td class="free">—</td>
+        </tr>
+        <tr>
+          <th scope="row">15:20</th>
+          <td>Biologia<br><span class="teacher-name">Marcos</span></td>
+          <td class="free">—</td>
+          <td>Inglês<br><span class="teacher-name">Mariana</span></td>
+          <td class="free">—</td>
+          <td class="free">—</td>
         </tr>
       </tbody>
     </table>
