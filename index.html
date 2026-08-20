@@ -415,6 +415,7 @@ footer {
       <a href="#horario">Horário</a>
       <a href="#avisos">Avisos</a>
       <a href="#resolvedor">Resolvedor</a>
+      <a href="#fisica">Física</a>
     </nav>
   </header>
 
@@ -593,26 +594,38 @@ footer {
     <div class="resolver-output" id="resolver-output" aria-live="polite"></div>
   </section>
 
+  <section id="fisica">
+    <p class="eyebrow">Ferramenta</p>
+    <h2 class="section-title">Resolvedor de física</h2>
+    <form class="resolver" id="physics-form">
+      <label for="physics-input">Descreva a questão com os valores conhecidos</label>
+      <div class="resolver-row">
+        <input type="text" id="physics-input" name="physics-input" placeholder="Ex: velocidade inicial de 2 m/s, aceleração de 3 m/s², tempo de 4 s, qual a velocidade final" autocomplete="off">
+        <button type="submit">Resolver</button>
+      </div>
+    </form>
+    <div class="resolver-output" id="physics-output" aria-live="polite"></div>
+  </section>
+
   <footer>
     Feito com carinho para a turma — 2026.
   </footer>
 </div>
 
 <script src="src/math/MathResolver.js"></script>
+<script src="src/physical/PhyResolver.js"></script>
 <script>
 const resolver = new MathResolver();
+const physicsResolver = new PhyResolver();
 const form = document.getElementById("resolver-form");
 const input = document.getElementById("resolver-input");
 const output = document.getElementById("resolver-output");
+const physicsForm = document.getElementById("physics-form");
+const physicsInput = document.getElementById("physics-input");
+const physicsOutput = document.getElementById("physics-output");
 
-form.addEventListener("submit", event => {
-  event.preventDefault();
-  const value = input.value.trim();
-  if (!value) return;
-
-  const solved = resolver.resolve(value);
-  output.innerHTML = "";
-
+function renderResult(solved, container) {
+  container.innerHTML = "";
   const card = document.createElement("div");
   card.className = "pin-note resolver-result";
   card.style.setProperty("--tilt", "-1deg");
@@ -624,7 +637,21 @@ form.addEventListener("submit", event => {
     card.innerHTML = `<h4>Resultado: ${solved.result}</h4><ol class="resolver-steps">${stepsList}</ol>`;
   }
 
-  output.appendChild(card);
+  container.appendChild(card);
+}
+
+form.addEventListener("submit", event => {
+  event.preventDefault();
+  const value = input.value.trim();
+  if (!value) return;
+  renderResult(resolver.resolve(value), output);
+});
+
+physicsForm.addEventListener("submit", event => {
+  event.preventDefault();
+  const value = physicsInput.value.trim();
+  if (!value) return;
+  renderResult(physicsResolver.resolve(value), physicsOutput);
 });
 </script>
 
