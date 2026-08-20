@@ -5,9 +5,14 @@ class MathResolver {
       return this._error(original, "Digite uma expressão, equação, inequação ou pergunta de matemática.");
     }
 
-    const normalized = this._normalizeDecimals(original);
+    let normalized = this._normalizeDecimals(original);
+    normalized = this._normalizeSuperscripts(normalized);
+    normalized = this._convertTimesX(normalized);
 
     try {
+      const percentageChange = this._matchPercentageChange(normalized);
+      if (percentageChange) return this._solvePercentageChange(original, percentageChange);
+
       const percentage = this._matchPercentage(normalized);
       if (percentage) return this._solvePercentage(original, percentage);
 
@@ -21,6 +26,8 @@ class MathResolver {
       if (rangeCount) return this._solveRangeCount(original, rangeCount);
 
       if (this._looksLikeInequality(normalized)) return this._solveLinearInequality(original, normalized);
+
+      if (this._looksLikeQuadratic(normalized)) return this._solveQuadraticEquation(original, normalized);
 
       if (this._looksLikeEquation(normalized)) return this._solveLinearEquation(original, normalized);
 
@@ -39,6 +46,48 @@ class MathResolver {
     return input.replace(/(\d),(\d)/g, "$1.$2");
   }
 
+  _normalizeSuperscripts(input) {
+    return input.replace(/²/g, "^2").replace(/³/g, "^3");
+  }
+
+  _convertTimesX(input) {
+    let text = input;
+    let previous;
+    do {
+      previous = text;
+      text = text.replace(/([\d.]+)\s*[xX]\s*(?=[\d.])/g, "$1*");
+    } while (text !== previous);
+    return text;
+  }
+
+  _matchPercentageChange(input) {
+    const match = input.match(
+      /(aument\w*|diminu\w*|reduz\w*)\s+(-?\d+(?:\.\d+)?)\s+em\s+(-?\d+(?:\.\d+)?)\s*%/i
+    );
+    if (!match) return null;
+    return {
+      isIncrease: /^aument/i.test(match[1]),
+      value: parseFloat(match[2]),
+      percent: parseFloat(match[3])
+    };
+  }
+
+  _solvePercentageChange(input, { isIncrease, value, percent }) {
+    const factor = isIncrease ? 1 + percent / 100 : 1 - percent / 100;
+    const result = this._round(value * factor);
+    const verb = isIncrease ? "Aumentar" : "Diminuir";
+    const sign = isIncrease ? "+" : "-";
+    return {
+      type: "percentage-change",
+      input,
+      result,
+      steps: [
+        `${verb} ${value} em ${percent}% equivale a multiplicar por (1 ${sign} ${percent}/100) = ${this._round(factor)}`,
+        `${value} × ${this._round(factor)} = ${this._round(result)}`
+      ]
+    };
+  }
+
   _matchPercentage(input) {
     const match = input.match(/(-?\d+(?:\.\d+)?)\s*%\s*(?:de|of)?\s*(-?\d+(?:\.\d+)?)/i);
     if (!match) return null;
@@ -47,7 +96,7 @@ class MathResolver {
 
   _solvePercentage(input, { percent, base }) {
     const fraction = percent / 100;
-    const result = fraction * base;
+    const result = this._round(fraction * base);
     return {
       type: "percentage",
       input,
@@ -75,7 +124,7 @@ class MathResolver {
 
   _solveAverage(input, numbers) {
     const sum = numbers.reduce((total, value) => total + value, 0);
-    const result = sum / numbers.length;
+    const result = this._round(sum / numbers.length);
     return {
       type: "average",
       input,
@@ -145,6 +194,10 @@ class MathResolver {
     return /[<>]/.test(input) && /[a-zA-Z]/.test(input);
   }
 
+  _looksLikeQuadratic(input) {
+    return input.includes("=") && /[a-zA-Z]\s*\^\s*2/.test(input);
+  }
+
   _looksLikeEquation(input) {
     return input.includes("=") && /[a-zA-Z]/.test(input);
   }
@@ -204,6 +257,129 @@ class MathResolver {
     };
   }
 
+  _solveQuadraticEquation(originalInput, input) {
+    const variableMatch = input.match(/([a-zA-Z])\s*\^\s*2/);
+    if (!variableMatch) throw new Error("Não encontrei a incógnita quadrática.");
+    const variable = variableMatch[1];
+
+    const [leftRaw, rightRaw] = input.split("=");
+    if (rightRaw === undefined) throw new Error("A equação precisa ter um sinal de igual.");
+
+    const left = this._parseQuadraticSide(leftRaw, variable);
+    const right = this._parseQuadraticSide(rightRaw, variable);
+
+    const a = left.a - right.a;
+    const b = left.b - right.b;
+    const c = left.c - right.c;
+
+    if (a === 0) {
+      if (b === 0) {
+        return c === 0
+          ? {
+              type: "equation",
+              input: originalInput,
+              result: "infinitas soluções",
+              steps: [`Os dois lados da equação são sempre iguais, qualquer valor de ${variable} funciona.`]
+            }
+          : {
+              type: "equation",
+              input: originalInput,
+              result: "sem solução",
+              steps: [`A equação não tem solução: ${this._round(c)} = 0 é impossível.`]
+            };
+      }
+      const linearResult = this._round(-c / b);
+      return {
+        type: "equation",
+        input: originalInput,
+        result: linearResult,
+        steps: [
+          `O termo ${variable}² desaparece, sobrando uma equação linear: ${this._round(b)}${variable} + ${this._round(c)} = 0`,
+          `${variable} = ${this._round(-c)} / ${this._round(b)} = ${this._round(linearResult)}`
+        ]
+      };
+    }
+
+    const delta = b * b - 4 * a * c;
+    const standardForm = `${this._round(a)}${variable}² ${b >= 0 ? "+" : "-"} ${this._round(Math.abs(b))}${variable} ${c >= 0 ? "+" : "-"} ${this._round(Math.abs(c))} = 0`;
+
+    if (delta < 0) {
+      return {
+        type: "quadratic-equation",
+        input: originalInput,
+        result: "sem solução real",
+        steps: [
+          `Forma padrão: ${standardForm}`,
+          `Δ = b² - 4ac = (${this._round(b)})² - 4×(${this._round(a)})×(${this._round(c)}) = ${this._round(delta)}`,
+          `Como Δ é negativo, não existe raiz real.`
+        ]
+      };
+    }
+
+    const sqrtDelta = Math.sqrt(delta);
+
+    if (delta === 0) {
+      const root = -b / (2 * a);
+      return {
+        type: "quadratic-equation",
+        input: originalInput,
+        result: `${variable} = ${this._round(root)}`,
+        steps: [
+          `Forma padrão: ${standardForm}`,
+          `Δ = b² - 4ac = (${this._round(b)})² - 4×(${this._round(a)})×(${this._round(c)}) = ${this._round(delta)}`,
+          `Δ = 0, então há uma única raiz: ${variable} = -b / (2a) = ${this._round(-b)} / ${this._round(2 * a)} = ${this._round(root)}`
+        ]
+      };
+    }
+
+    const root1 = (-b + sqrtDelta) / (2 * a);
+    const root2 = (-b - sqrtDelta) / (2 * a);
+    return {
+      type: "quadratic-equation",
+      input: originalInput,
+      result: `${variable} = ${this._round(root1)} ou ${variable} = ${this._round(root2)}`,
+      steps: [
+        `Forma padrão: ${standardForm}`,
+        `Δ = b² - 4ac = (${this._round(b)})² - 4×(${this._round(a)})×(${this._round(c)}) = ${this._round(delta)}`,
+        `${variable} = (-b ± √Δ) / (2a) = (${this._round(-b)} ± ${this._round(sqrtDelta)}) / ${this._round(2 * a)}`,
+        `${variable} = ${this._round(root1)} ou ${variable} = ${this._round(root2)}`
+      ]
+    };
+  }
+
+  _parseQuadraticSide(side, variable) {
+    const normalized = side.replace(/\s+/g, "").replace(/-/g, "+-");
+    const terms = normalized.split("+").filter(Boolean);
+    let a = 0;
+    let b = 0;
+    let c = 0;
+
+    const termPattern = new RegExp(
+      `^([+-]?)(\\d*\\.?\\d*)(?:\\*)?(${variable}\\^2|${variable})?(?:\\/(\\d+(?:\\.\\d+)?))?$`,
+      "i"
+    );
+
+    for (const term of terms) {
+      const match = term.match(termPattern);
+      if (!match) throw new Error(`Não entendi o termo "${term}".`);
+      const sign = match[1] === "-" ? -1 : 1;
+      const digits = match[2];
+      const varPart = match[3] ? match[3].toLowerCase() : null;
+      const divisor = match[4] ? parseFloat(match[4]) : 1;
+      if (divisor === 0) throw new Error("Divisão por zero em um dos termos.");
+      const magnitude = (digits === "" ? 1 : parseFloat(digits)) / divisor;
+      if (varPart === `${variable.toLowerCase()}^2`) {
+        a += sign * magnitude;
+      } else if (varPart === variable.toLowerCase()) {
+        b += sign * magnitude;
+      } else {
+        c += sign * magnitude;
+      }
+    }
+
+    return { a, b, c };
+  }
+
   _solveLinearEquation(originalInput, input) {
     const variableMatch = input.match(/[a-zA-Z]/);
     if (!variableMatch) throw new Error("Não encontrei a incógnita da equação.");
@@ -235,7 +411,7 @@ class MathResolver {
       };
     }
 
-    const result = constant / coefficient;
+    const result = this._round(constant / coefficient);
     return {
       type: "equation",
       input: originalInput,
@@ -279,6 +455,14 @@ class MathResolver {
 
   _translateWordsToSymbols(input) {
     let text = input;
+    text = text.replace(/raiz\s+(?:quadrada\s+)?de\s*\(?(-?\d+(?:\.\d+)?)\)?/gi, "sqrt($1)");
+    text = text.replace(/√\s*(-?\d+(?:\.\d+)?)/g, "sqrt($1)");
+    text = text.replace(/√/g, "sqrt");
+    text = text.replace(/dobro\s+de\s*(-?\d+(?:\.\d+)?)/gi, "($1*2)");
+    text = text.replace(/triplo\s+de\s*(-?\d+(?:\.\d+)?)/gi, "($1*3)");
+    text = text.replace(/metade\s+de\s*(-?\d+(?:\.\d+)?)/gi, "($1/2)");
+    text = text.replace(/(-?\d+(?:\.\d+)?)\s*ao\s+quadrado/gi, "($1^2)");
+    text = text.replace(/(-?\d+(?:\.\d+)?)\s*ao\s+cubo/gi, "($1^3)");
     text = text.replace(/quanto\s+(?:é|e|vale|d[aá])/gi, " ");
     text = text.replace(/resultado\s+de/gi, " ");
     text = text.replace(/calcul[ea]r?/gi, " ");
@@ -293,14 +477,14 @@ class MathResolver {
     text = text.replace(/÷/g, "/");
 
     const tokens = text.split(/\s+/).filter(Boolean);
-    const kept = tokens.filter(token => /^[-+*/^().\d]+$/.test(token));
+    const kept = tokens.filter(token => /^[-+*/^().\d]+$/.test(token) || /^sqrt\(/i.test(token));
     return kept.join(" ").trim() || text.trim();
   }
 
   _solveExpression(originalInput, input) {
     const tokens = this._tokenize(input);
     const rpn = this._toRPN(tokens);
-    const result = this._evalRPN(rpn);
+    const result = this._round(this._evalRPN(rpn));
     return {
       type: "expression",
       input: originalInput,
@@ -329,10 +513,24 @@ class MathResolver {
         tokens.push(number);
         continue;
       }
+      if (/[a-zA-Z]/.test(char)) {
+        let word = char;
+        i++;
+        while (i < cleaned.length && /[a-zA-Z]/.test(cleaned[i])) {
+          word += cleaned[i];
+          i++;
+        }
+        if (word.toLowerCase() === "sqrt") {
+          tokens.push("sqrt");
+        } else {
+          throw new Error(`Função não reconhecida: "${word}"`);
+        }
+        continue;
+      }
       if ("+-*/^()".includes(char)) {
         const isUnaryMinus =
           char === "-" &&
-          (tokens.length === 0 || ["+", "-", "*", "/", "^", "("].includes(tokens[tokens.length - 1]));
+          (tokens.length === 0 || ["+", "-", "*", "/", "^", "(", "sqrt"].includes(tokens[tokens.length - 1]));
         if (isUnaryMinus) {
           tokens.push("0");
           tokens.push("-");
@@ -356,6 +554,8 @@ class MathResolver {
     for (const token of tokens) {
       if (/^[\d.]+$/.test(token)) {
         output.push(token);
+      } else if (token === "sqrt") {
+        operators.push(token);
       } else if (token in precedence) {
         while (
           operators.length &&
@@ -374,6 +574,9 @@ class MathResolver {
         }
         if (!operators.length) throw new Error("Parênteses desbalanceados.");
         operators.pop();
+        if (operators.length && operators[operators.length - 1] === "sqrt") {
+          output.push(operators.pop());
+        }
       } else {
         throw new Error(`Token inválido: "${token}"`);
       }
@@ -393,6 +596,13 @@ class MathResolver {
     for (const token of rpn) {
       if (/^[\d.]+$/.test(token)) {
         stack.push(parseFloat(token));
+        continue;
+      }
+      if (token === "sqrt") {
+        const a = stack.pop();
+        if (a === undefined) throw new Error("Expressão incompleta.");
+        if (a < 0) throw new Error("Raiz de número negativo não é real.");
+        stack.push(Math.sqrt(a));
         continue;
       }
       const b = stack.pop();
