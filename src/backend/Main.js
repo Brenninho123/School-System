@@ -153,6 +153,13 @@ async function handleApi(req, res, pathname, searchParams) {
     return true;
   }
 
+  if (pathname === "/api/presence/leave" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    if (body.id) presenceStore.delete(String(body.id));
+    sendJson(res, 200, { ok: true });
+    return true;
+  }
+
   if (pathname.startsWith("/api/presence/") && req.method === "DELETE") {
     const id = decodeURIComponent(pathname.slice("/api/presence/".length));
     presenceStore.delete(id);
