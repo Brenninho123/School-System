@@ -735,7 +735,7 @@ footer {
 <script>
 const resolver = new MathResolver();
 const physicsResolver = new PhyResolver();
-const networkManager = new NetworkManager();
+const networkManager = new NetworkManager({ pingUrl: "/api/health" });
 
 const form = document.getElementById("resolver-form");
 const input = document.getElementById("resolver-input");
@@ -749,6 +749,9 @@ const presenceForm = document.getElementById("presence-form");
 const presenceName = document.getElementById("presence-name");
 const presenceRole = document.getElementById("presence-role");
 const presenceList = document.getElementById("presence-list");
+
+let currentUserId = null;
+let heartbeatTimer = null;
 
 function renderResult(solved, container) {
   container.innerHTML = "";
@@ -766,18 +769,32 @@ function renderResult(solved, container) {
   container.appendChild(card);
 }
 
-form.addEventListener("submit", event => {
+async function resolveViaApi(path, value, localResolver) {
+  try {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ input: value })
+    });
+    if (!response.ok) throw new Error("API indisponível");
+    return await response.json();
+  } catch (err) {
+    return localResolver.resolve(value);
+  }
+}
+
+form.addEventListener("submit", async event => {
   event.preventDefault();
   const value = input.value.trim();
   if (!value) return;
-  renderResult(resolver.resolve(value), output);
+  renderResult(await resolveViaApi("/api/math", value, resolver), output);
 });
 
-physicsForm.addEventListener("submit", event => {
+physicsForm.addEventListener("submit", async event => {
   event.preventDefault();
   const value = physicsInput.value.trim();
   if (!value) return;
-  renderResult(physicsResolver.resolve(value), physicsOutput);
+  renderResult(await resolveViaApi("/api/physics", value, physicsResolver), physicsOutput);
 });
 
 function updateStatus(status) {
@@ -785,8 +802,20 @@ function updateStatus(status) {
   statusText.textContent = status.connected ? "Conectado" : "Sem conexão, tentando reconectar…";
 }
 
-function renderPresence() {
-  const users = networkManager.getOnlineUsers();
+async function fetchRemotePresence() {
+  try {
+    const response = await fetch("/api/presence/online");
+    if (!response.ok) throw new Error("API indisponível");
+    const data = await response.json();
+    return data.users;
+  } catch (err) {
+    return null;
+  }
+}
+
+async function renderPresence() {
+  const remoteUsers = await fetchRemotePresence();
+  const users = remoteUsers !== null ? remoteUsers : networkManager.getOnlineUsers();
   presenceList.innerHTML = "";
   if (!users.length) {
     const empty = document.createElement("li");
@@ -804,19 +833,40 @@ function renderPresence() {
   });
 }
 
+function sendHeartbeat() {
+  if (!currentUserId) return;
+  fetch("/api/presence/heartbeat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: currentUserId, name: presenceName.value.trim(), role: presenceRole.value })
+  }).catch(() => {});
+}
+
+function leavePresence() {
+  if (!currentUserId) return;
+  const payload = new Blob([JSON.stringify({ id: currentUserId })], { type: "application/json" });
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon("/api/presence/leave", payload);
+  }
+}
+
 networkManager.onStatusChange(updateStatus);
 networkManager.onPresenceChange(renderPresence);
 networkManager.init();
 updateStatus(networkManager.getStatus());
 renderPresence();
 setInterval(renderPresence, 5000);
+window.addEventListener("beforeunload", leavePresence);
+window.addEventListener("pagehide", leavePresence);
 
 presenceForm.addEventListener("submit", event => {
   event.preventDefault();
   const name = presenceName.value.trim();
   if (!name) return;
-  const id = "user-" + Math.random().toString(36).slice(2, 10);
-  networkManager.init({ id, name, role: presenceRole.value });
+  currentUserId = "user-" + Math.random().toString(36).slice(2, 10);
+  networkManager.init({ id: currentUserId, name, role: presenceRole.value });
+  sendHeartbeat();
+  heartbeatTimer = setInterval(sendHeartbeat, 15000);
   renderPresence();
   presenceForm.querySelector("button").textContent = "Você está online";
   presenceForm.querySelector("button").disabled = true;
